@@ -13,7 +13,7 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,7 +31,7 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -42,9 +42,17 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
       RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
       RABBITMQ_TOPIC: sd/notificacoes
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.gmail.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_SECURE: ${EMAIL_SECURE:-false}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      EMAIL_FROM: ${EMAIL_FROM:-Sistema de Consultas Médicas <noreply@consultamedica.com>}
       NODE_ENV: production
     restart: unless-stopped
 
@@ -58,10 +66,21 @@ services:
         condition: service_healthy
     ports:
       - "8000:8000"
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: consultamedica
+      DB_USERNAME: user
+      DB_PASSWORD: userpassword
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: admin
+      RABBITMQ_PASSWORD: admin
+      RABBITMQ_VHOST: /
     volumes:
       - ./servico-pagamentos:/var/www
-    command: sh -c "php artisan migrate:refresh && php artisan serve --host=0.0.0.0 --port=8000"
-
+    command: sh -c "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"
 
 volumes:
   rabbitmq_data:

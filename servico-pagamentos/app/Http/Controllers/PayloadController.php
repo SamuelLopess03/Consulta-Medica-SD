@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Payload;
 use App\Services\RabbitMQService;
-use Nette\Utils\Json;
 
 class PayloadController extends Controller
 {
@@ -25,10 +24,10 @@ class PayloadController extends Controller
 
         $rabbitMQ->publishToExchange(
             'notificacoes_exchange',
-            'email.confirmacao',
+            'sd/notificacoes',
             [
-                'email'    => $payload->customer_email,
-                'assunto'  => 'Confirmação de Pagamento',
+                'email' => $payload->customer_email,
+                'assunto' => 'Confirmação de Pagamento',
                 'mensagem' => "Seu pagamento de R$ {$payload->total} foi realizado com sucesso."
             ]
         );
@@ -61,10 +60,10 @@ class PayloadController extends Controller
 
         $rabbitMQ->publishToExchange(
             'notificacoes_exchange',
-            'sd.notificacoes',
+            'sd/notificacoes',
             [
-                'email'    => $payload->customer_email,
-                'assunto'  => 'Pagamento em Aberto',
+                'email' => $payload->customer_email,
+                'assunto' => 'Pagamento em Aberto',
                 'mensagem' => "Seu pagamento de R$ {$payload->total} foi criado e está pendente."
             ]
         );
@@ -101,10 +100,10 @@ class PayloadController extends Controller
 
         $rabbitMQ->publishToExchange(
             'notificacoes_exchange',
-            'email.alterado',
+            'sd/notificacoes',
             [
-                'email'    => $payload->customer_email,
-                'assunto'  => 'Alteração no Pagamento',
+                'email' => $payload->customer_email,
+                'assunto' => 'Alteração no Pagamento',
                 'mensagem' => "Houve uma alteração no seu pagamento."
             ]
         );
@@ -122,10 +121,10 @@ class PayloadController extends Controller
 
         $rabbitMQ->publishToExchange(
             'notificacoes_exchange',
-            'email.deletado',
+            'sd/notificacoes',
             [
-                'email'    => $payload->customer_email,
-                'assunto'  => 'Cancelamento do Pagamento',
+                'email' => $payload->customer_email,
+                'assunto' => 'Cancelamento do Pagamento',
                 'mensagem' => "Seu pagamento foi cancelado com sucesso."
             ]
         );
