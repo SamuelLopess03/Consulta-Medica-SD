@@ -1,4 +1,6 @@
+// Importa o módulo nodemailer para envio de e-mails
 const nodemailer = require('nodemailer');
+// Importa as configurações do sistema
 const config = require('./config');
 
 /**
@@ -6,7 +8,9 @@ const config = require('./config');
  */
 class EmailService {
   constructor() {
+    // Inicializa o transportador como nulo
     this.transporter = null;
+    // Chama o método para inicializar o transportador SMTP
     this.initializeTransporter();
   }
 
@@ -15,15 +19,17 @@ class EmailService {
    */
   initializeTransporter() {
     try {
+      // Cria o objeto transportador com os dados do host, porta e autenticação
       this.transporter = nodemailer.createTransport({
         host: config.email.host,
         port: config.email.port,
-        secure: config.email.secure,
+        secure: config.email.secure, // true para porta 465, false para outras
         auth: config.email.auth
       });
 
       console.log('✅ Transportador de e-mail inicializado com sucesso.');
     } catch (error) {
+      // Registra erro caso a inicialização do transportador falhe
       console.error('❌ Falha ao inicializar o transportador de e-mail:', error.message);
     }
   }
@@ -36,21 +42,26 @@ class EmailService {
    */
   async sendEmail(to, subject, message) {
     try {
+      // Verifica se o transportador foi inicializado
       if (!this.transporter) {
         throw new Error('Transportador de e-mail não configurado.');
       }
 
+      // Define as opções do e-mail
       const mailOptions = {
-        from: config.email.from,
-        to: to,
-        subject: subject,
+        from: config.email.from, // Remetente
+        to: to,                  // Destinatário
+        subject: subject,        // Assunto
+        // Usa um template HTML para formatar o corpo do e-mail
         html: this.formatEmailTemplate(subject, message)
       };
 
+      // Realiza o envio do e-mail de forma assíncrona
       const info = await this.transporter.sendMail(mailOptions);
       console.log(`📧 E-mail enviado com sucesso para ${to}. ID: ${info.messageId}`);
       return { success: true, messageId: info.messageId };
     } catch (error) {
+      // Registra e retorna erro se o envio falhar
       console.error(`❌ Erro no envio de e-mail para ${to}:`, error.message);
       return { success: false, error: error.message };
     }
@@ -121,6 +132,7 @@ class EmailService {
       if (!this.transporter) {
         throw new Error('Transportador de e-mail não disponível.');
       }
+      // O método verify do nodemailer testa a autenticação e conexão
       await this.transporter.verify();
       console.log('✅ Conexão com o servidor SMTP validada com sucesso.');
       return true;
@@ -131,4 +143,5 @@ class EmailService {
   }
 }
 
+// Exporta uma única instância da classe para ser usada em todo o sistema (Singleton)
 module.exports = new EmailService();

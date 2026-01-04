@@ -1,5 +1,8 @@
+// Importa a biblioteca amqplib para lidar com o protocolo AMQP (RabbitMQ)
 const amqp = require('amqplib');
+// Importa as configurações do sistema
 const config = require('./config');
+// Importa o serviço de e-mail para processar os envios
 const emailService = require('./emailService');
 
 /**
@@ -7,9 +10,9 @@ const emailService = require('./emailService');
  */
 class RabbitMQService {
     constructor() {
-        this.connection = null;
-        this.channel = null;
-        this.isConnected = false;
+        this.connection = null; // Armazena a conexão com o broker
+        this.channel = null;    // Armazena o canal de comunicação aberto na conexão
+        this.isConnected = false; // Flag para indicar o estado da conexão
     }
 
     /**
@@ -25,17 +28,19 @@ class RabbitMQService {
             // 2. Criar um canal virtual dentro da conexão
             this.channel = await this.connection.createChannel();
 
-            // 3. Garantir a existência da Exchange
+            // 3. Garantir que a Exchange (Central de Distribuição) exista no servidor
+            // Tipo 'topic' permite roteamento de mensagens baseado em chaves (ex: sd.notificacoes.email)
             await this.channel.assertExchange(
                 config.rabbitmq.exchange,
                 config.rabbitmq.exchangeType,
-                { durable: true }
+                { durable: true } // durable: true garante que a exchange sobreviva a reinícios do broker
             );
 
-            // 4. Criar fila exclusiva
+            // 4. Criar uma fila que será exclusiva para este processo do serviço
+            // exclusive: true indica que a fila será deletada quando a conexão fechar
             const queue = await this.channel.assertQueue('', { exclusive: true });
 
-            // 5. Vincular fila à exchange
+            // 5. Vincular a fila à exchange para que ela receba mensagens do tópico configurado
             await this.channel.bindQueue(
                 queue.queue,
                 config.rabbitmq.exchange,
@@ -47,14 +52,14 @@ class RabbitMQService {
 
             this.isConnected = true;
 
-            // 6. Iniciar consumo
+            // 6. Iniciar o processo de escuta (consumo) de mensagens enviadas para a fila
             await this.startConsuming(queue.queue);
 
             // Eventos para tratar quedas de conexão de forma resiliente
             this.connection.on('close', () => {
                 console.warn('⚠️  Conexão com o RabbitMQ encerrada.');
                 this.isConnected = false;
-                this.reconnect();
+                this.reconnect(); // Tenta reconectar automaticamente
             });
 
             this.connection.on('error', (err) => {
@@ -65,6 +70,7 @@ class RabbitMQService {
         } catch (error) {
             console.error('❌ Falha ao conectar ao RabbitMQ:', error.message);
             this.isConnected = false;
+            // Tenta reconectar se a conexão falhar logo no início
             await this.reconnect();
         }
     }
@@ -81,22 +87,30 @@ class RabbitMQService {
             await this.channel.consume(queueName, async (msg) => {
                 if (msg !== null) {
                     try {
+                        // Converte o buffer da mensagem em string
                         const content = msg.content.toString();
                         console.log(`\n📨 Mensagem recebida no tópico ${config.rabbitmq.topic}:`);
                         console.log(content);
 
+                        // Transforma a string JSON em objeto JavaScript
                         const notification = JSON.parse(content);
+
+                        // Chama o processamento lógico da notificação
                         await this.processNotification(notification);
 
+                        // Confirma para o RabbitMQ que a mensagem foi processada com sucesso (Acknowledge)
                         this.channel.ack(msg);
                         console.log('✅ Mensagem processada com sucesso.\n');
 
                     } catch (error) {
                         console.error('❌ Erro ao processar mensagem recebida:', error.message);
+                        // Rejeita a mensagem (Negative Acknowledge)
+                        // false, false: não reinserir na fila para evitar loops infinitos de erro
                         this.channel.nack(msg, false, false);
                     }
                 }
             }, {
+                // noAck: false obriga o envio manual do 'ack' após o processamento
                 noAck: false
             });
 
@@ -111,6 +125,7 @@ class RabbitMQService {
      */
     async processNotification(notification) {
         try {
+            // Valida se os dados necessários para o envio existem no objeto
             if (!notification.email) {
                 throw new Error('Campo "email" do destinatário ausente.');
             }
@@ -131,6 +146,7 @@ class RabbitMQService {
             console.log(`📧 Processando envio de e-mail para: ${email}`);
             console.log(`📋 Assunto: ${subject}`);
 
+            // Delega o envio real para o emailService
             const result = await emailService.sendEmail(email, subject, message);
 
             if (result.success) {
@@ -173,4 +189,5 @@ class RabbitMQService {
     }
 }
 
+// Exporta uma única instância do serviço (Singleton)
 module.exports = new RabbitMQService();

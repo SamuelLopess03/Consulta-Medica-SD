@@ -1,5 +1,8 @@
+// Importa o serviço de gerenciamento do RabbitMQ
 const rabbitmqService = require('./rabbitmq');
+// Importa o serviço de envio de e-mails
 const emailService = require('./emailService');
+// Importa as configurações centrais do sistema
 const config = require('./config');
 
 /**
@@ -17,16 +20,18 @@ async function startService() {
     console.log(`   - Ambiente: ${config.service.env}\n`);
 
     try {
-        // Passo 1: Verificar conectividade SMTP
+        // Passo 1: Verificar se a conexão com o servidor SMTP (e-mail) está operando
         console.log('📧 Verificando conectividade com o servidor de e-mail...');
         const emailConnected = await emailService.verifyConnection();
 
         if (!emailConnected) {
+            // Caso falhe, apenas emite um aviso mas permite que o serviço continue rodando
             console.warn('⚠️  Aviso: Não foi possível estabelecer conexão com o servidor SMTP.');
             console.warn('   O serviço permanecerá ativo, contudo, o envio de e-mails poderá falhar.\n');
         }
 
-        // Passo 2: Conectar ao RabbitMQ
+        // Passo 2: Estabelecer conexão com o broker de mensagens RabbitMQ
+        // Internamente, este método também configura a exchange e inicia o consumo (listen)
         await rabbitmqService.connect();
 
         console.log('\n✅ Serviço de Notificações inicializado com sucesso.');
@@ -46,8 +51,9 @@ process.on('SIGINT', async () => {
     console.log('\n\n⚠️  Sinal de interrupção recebido (SIGINT).');
     console.log('🛑 Finalizando processos e encerrando o serviço...');
 
+    // Tenta fechar a conexão com o RabbitMQ de forma limpa antes de fechar
     await rabbitmqService.close();
-    process.exit(0);
+    process.exit(0); // Sucesso
 });
 
 /**
@@ -77,4 +83,5 @@ process.on('unhandledRejection', (reason, promise) => {
     process.exit(1);
 });
 
+// Executa a função principal para iniciar o serviço
 startService();
