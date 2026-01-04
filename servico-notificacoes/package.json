@@ -1,0 +1,26 @@
+{
+  "name": "servico-notificacoes",
+  "version": "1.0.0",
+  "description": "Serviço de notificações usando RabbitMQ para o sistema de consultas médicas",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "keywords": [
+    "rabbitmq",
+    "notifications",
+    "email",
+    "distributed-systems"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "amqplib": "^0.10.3",
+    "nodemailer": "^6.9.7",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
