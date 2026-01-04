@@ -14,6 +14,7 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - consulta-medica-network
+    restart: unless-stopped
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
       interval: 10s
@@ -26,6 +27,8 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
       RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
       RABBITMQ_TOPIC: sd/notificacoes
