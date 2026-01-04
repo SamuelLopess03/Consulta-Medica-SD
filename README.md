@@ -25,7 +25,7 @@ Pagamento/Validação: api pablo
 	transmite alterações no mosquitto 
 
 
-Serviço de Notificações: Mosquitto rod
+Serviço de Notificações: RabbitMQ Rod
 	criar serviço mosquitto
 	se conectar nos canais de transmissão de cada máquina e toda vez que receber um aviso, vai e envia um email com a mensagem para o email do cliente
 

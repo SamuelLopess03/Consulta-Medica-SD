@@ -74,19 +74,45 @@ Para usar o Gmail, você precisa:
 
 ## 🎯 Como Rodar o Sistema
 
-### Passo a Passo Completo
+### 🐋 Opção 1: Via Docker Compose (Recomendado/Pronto para Uso)
+
+Esta é a forma mais rápida e simples de subir o sistema completo (RabbitMQ + Serviço de Notificações) em segundo plano.
+
+**1. Subir os containers:**
+```bash
+cd servico-notificacoes
+docker-compose up -d
+```
+
+**2. Verificar se está rodando:**
+```bash
+docker-compose ps
+```
+
+**3. Ver os logs do serviço:**
+```bash
+docker logs -f servico-notificacoes
+```
+
+**4. Como Parar:**
+```bash
+docker-compose down
+```
+
+---
+
+### 💻 Opção 2: Execução Manual (via npm start)
+
+Use esta opção se quiser rodar o serviço de notificações localmente no seu terminal para depuração.
 
 #### 1️⃣ Instalar Dependências
-
 ```bash
 cd servico-notificacoes
 npm install
 ```
 
 #### 2️⃣ Configurar Variáveis de Ambiente
-
-O arquivo `.env` já deve estar configurado. Verifique se contém:
-
+Certifique-se de que o arquivo `.env` contém as credenciais corretas:
 ```env
 RABBITMQ_URL=amqp://admin:admin@localhost:5672
 RABBITMQ_TOPIC=sd/notificacoes
@@ -95,99 +121,38 @@ EMAIL_PORT=465
 EMAIL_SECURE=true
 EMAIL_USER=suporte@smartwebsistemas.online
 EMAIL_PASS=sua-senha
-EMAIL_FROM=Sistema de Consultas Medicas <suporte@smartwebsistemas.online>
 NODE_ENV=development
-PORT=3003
 ```
 
-> ⚠️ **IMPORTANTE:** A URL do RabbitMQ deve incluir as credenciais: `amqp://admin:admin@localhost:5672`
-
-#### 3️⃣ Iniciar o RabbitMQ
-
-Inicie **apenas o RabbitMQ** com Docker:
-
-```bash
-docker run -d --name rabbitmq \
-  -p 5672:5672 \
-  -p 15672:15672 \
-  -e RABBITMQ_DEFAULT_USER=admin \
-  -e RABBITMQ_DEFAULT_PASS=admin \
-  rabbitmq:3-management
-```
-
-Ou use o Docker Compose para iniciar apenas o RabbitMQ:
-
+#### 3️⃣ Iniciar APENAS o RabbitMQ
+Você ainda precisa do RabbitMQ rodando. Use o Docker para subir apenas ele:
 ```bash
 docker-compose up -d rabbitmq
 ```
 
-**Verificar se o RabbitMQ está rodando:**
-
-```bash
-docker ps | findstr rabbitmq
-```
-
-**Acessar o painel do RabbitMQ:**
-- URL: http://localhost:15672
-- Usuário: `admin`
-- Senha: `admin`
-
-#### 4️⃣ Iniciar o Serviço de Notificações
-
+#### 4️⃣ Iniciar o Serviço
 ```bash
 npm start
 ```
 
-Você verá logs como:
-
-```
-🚀 Iniciando Serviço de Notificações...
-✅ Conexão com servidor SMTP verificada com sucesso
-🔌 Conectando ao RabbitMQ em amqp://admin:admin@localhost:5672...
-✅ Conectado ao RabbitMQ
-📡 Escutando no tópico: sd/notificacoes
-👂 Aguardando mensagens...
-```
-
-#### 5️⃣ Testar o Serviço
-
-Em outro terminal, execute o script de teste:
-
-```bash
-node test/enviar-teste.js
-```
-
-Você verá o email sendo processado nos logs do serviço.
-
 ---
 
-### Alternativa: Rodar Tudo com Docker Compose
-
-Se preferir rodar tudo containerizado:
-
-```bash
-# Parar o serviço local se estiver rodando (Ctrl+C)
-
-# Iniciar tudo com Docker Compose
-docker-compose up -d
-
-# Ver logs do serviço
-docker logs -f servico-notificacoes
-```
-
-Para parar:
-
-```bash
-docker-compose down
-```
-
----
-
-### Modo Desenvolvimento (com Hot Reload)
-
+### �️ Modo Desenvolvimento (com Hot Reload)
+Para que o servidor reinicie automaticamente a cada alteração no código:
 ```bash
 npm run dev
 ```
+
+---
+
+### 🧪 Como Testar o Envio de E-mail
+Independente de como você subiu o sistema, você pode testar o envio rodando o script de teste em um novo terminal:
+
+```bash
+cd servico-notificacoes
+node test/enviar-teste.js
+```
+Verifique os logs do serviço para confirmar o processamento e sua caixa de entrada no e-mail configurado.
 
 ## 📨 Formato das Mensagens
 
