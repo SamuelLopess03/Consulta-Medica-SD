@@ -2,52 +2,52 @@ const nodemailer = require('nodemailer');
 const config = require('./config');
 
 class EmailService {
-    constructor() {
-        this.transporter = null;
-        this.initializeTransporter();
+  constructor() {
+    this.transporter = null;
+    this.initializeTransporter();
+  }
+
+  initializeTransporter() {
+    try {
+      this.transporter = nodemailer.createTransport({
+        host: config.email.host,
+        port: config.email.port,
+        secure: config.email.secure,
+        auth: config.email.auth
+      });
+
+      console.log('✅ Transportador de e-mail inicializado com sucesso.');
+    } catch (error) {
+      console.error('❌ Falha ao inicializar o transportador de e-mail:', error.message);
     }
+  }
 
-    initializeTransporter() {
-        try {
-            this.transporter = nodemailer.createTransport({
-                host: config.email.host,
-                port: config.email.port,
-                secure: config.email.secure,
-                auth: config.email.auth
-            });
+  async sendEmail(to, subject, message) {
+    try {
+      if (!this.transporter) {
+        throw new Error('Transportador de e-mail não configurado.');
+      }
 
-            console.log('✅ Transportador de email inicializado com sucesso');
-        } catch (error) {
-            console.error('❌ Erro ao inicializar transportador de email:', error.message);
-        }
+      const mailOptions = {
+        from: config.email.from,
+        to: to,
+        subject: subject,
+        html: this.formatEmailTemplate(subject, message)
+      };
+
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log(`📧 E-mail enviado com sucesso para ${to}. ID: ${info.messageId}`);
+      return { success: true, messageId: info.messageId };
+    } catch (error) {
+      console.error(`❌ Erro no envio de e-mail para ${to}:`, error.message);
+      return { success: false, error: error.message };
     }
-
-    async sendEmail(to, subject, message) {
-        try {
-            if (!this.transporter) {
-                throw new Error('Transportador de email não inicializado');
-            }
-
-            const mailOptions = {
-                from: config.email.from,
-                to: to,
-                subject: subject,
-                html: this.formatEmailTemplate(subject, message)
-            };
-
-            const info = await this.transporter.sendMail(mailOptions);
-            console.log(`📧 Email enviado para ${to}: ${info.messageId}`);
-            return { success: true, messageId: info.messageId };
-        } catch (error) {
-            console.error(`❌ Erro ao enviar email para ${to}:`, error.message);
-            return { success: false, error: error.message };
-        }
-    }
+  }
 
 
-       //Pra deixar o email mais bonito
-    formatEmailTemplate(subject, message) {
-        return `
+  //Pra deixar o email mais bonito
+  formatEmailTemplate(subject, message) {
+    return `
       <!DOCTYPE html>
       <html>
       <head>
@@ -96,21 +96,21 @@ class EmailService {
       </body>
       </html>
     `;
-    }
+  }
 
-    async verifyConnection() {
-        try {
-            if (!this.transporter) {
-                throw new Error('Transportador não inicializado');
-            }
-            await this.transporter.verify();
-            console.log('✅ Conexão com servidor SMTP verificada com sucesso');
-            return true;
-        } catch (error) {
-            console.error('❌ Erro ao verificar conexão SMTP:', error.message);
-            return false;
-        }
+  async verifyConnection() {
+    try {
+      if (!this.transporter) {
+        throw new Error('Transportador de e-mail não disponível.');
+      }
+      await this.transporter.verify();
+      console.log('✅ Conexão com o servidor SMTP validada com sucesso.');
+      return true;
+    } catch (error) {
+      console.error('❌ Falha na validação da conexão SMTP:', error.message);
+      return false;
     }
+  }
 }
 
 module.exports = new EmailService();

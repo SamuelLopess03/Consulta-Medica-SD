@@ -16,17 +16,17 @@ async function enviarNotificacaoTeste() {
         connection = await amqp.connect(config.rabbitmqUrl);
         channel = await connection.createChannel();
 
-        console.log('📡 Criando exchange...');
+        console.log('📡 Configurando Exchange de destino...');
         await channel.assertExchange(config.exchange, 'topic', { durable: true });
 
         // Mensagem de teste
         const notificacao = {
             email: 'roddanadao@gmail.com',
             assunto: 'Teste de Notificação - Sistema de Consultas Médicas',
-            mensagem: 'Esta é uma mensagem de teste do sistema de notificações. Se você recebeu este email, o serviço está funcionando corretamente! 🎉'
+            mensagem: 'Esta é uma mensagem de teste do sistema de notificações. Se você recebeu este e-mail, o serviço está operando corretamente!'
         };
 
-        console.log('\n📨 Enviando notificação de teste:');
+        console.log('\n📨 Publicando notificação de teste:');
         console.log(JSON.stringify(notificacao, null, 2));
 
         channel.publish(
@@ -36,13 +36,13 @@ async function enviarNotificacaoTeste() {
             { persistent: true }
         );
 
-        console.log('\n✅ Notificação enviada com sucesso!');
+        console.log('\n✅ Notificação enviada com sucesso para o Broker.');
         console.log(`   Exchange: ${config.exchange}`);
         console.log(`   Tópico: ${config.topic}`);
-        console.log('\n👀 Verifique os logs do serviço de notificações para confirmar o processamento.');
+        console.log('\n👀 Verifique os logs do serviço de notificações para validar o processamento.');
 
     } catch (error) {
-        console.error('❌ Erro ao enviar notificação:', error.message);
+        console.error('❌ Falha na publicação da notificação de teste:', error.message);
         process.exit(1);
     } finally {
         if (channel) await channel.close();

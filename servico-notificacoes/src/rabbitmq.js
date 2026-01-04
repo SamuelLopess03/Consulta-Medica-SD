@@ -11,7 +11,7 @@ class RabbitMQService {
 
     async connect() {
         try {
-            console.log(`🔌 Conectando ao RabbitMQ em ${config.rabbitmq.url}...`);
+            console.log(`🔌 Iniciando conexão com o RabbitMQ em ${config.rabbitmq.url}...`);
 
             this.connection = await amqp.connect(config.rabbitmq.url);
             this.channel = await this.connection.createChannel();
@@ -33,7 +33,7 @@ class RabbitMQService {
                 config.rabbitmq.topic
             );
 
-            console.log(`✅ Conectado ao RabbitMQ`);
+            console.log(`✅ Conexão estabelecida com o RabbitMQ.`);
             console.log(`📡 Escutando no tópico: ${config.rabbitmq.topic}`);
 
             this.isConnected = true;
@@ -43,18 +43,18 @@ class RabbitMQService {
 
             // Tratar fechamento da conexão
             this.connection.on('close', () => {
-                console.log('⚠️  Conexão com RabbitMQ fechada');
+                console.warn('⚠️  Conexão com o RabbitMQ encerrada.');
                 this.isConnected = false;
                 this.reconnect();
             });
 
             this.connection.on('error', (err) => {
-                console.error('❌ Erro na conexão com RabbitMQ:', err.message);
+                console.error('❌ Erro na conexão com o RabbitMQ:', err.message);
                 this.isConnected = false;
             });
 
         } catch (error) {
-            console.error('❌ Erro ao conectar ao RabbitMQ:', error.message);
+            console.error('❌ Falha ao conectar ao RabbitMQ:', error.message);
             this.isConnected = false;
             await this.reconnect();
         }
@@ -62,13 +62,13 @@ class RabbitMQService {
 
     async startConsuming(queueName) {
         try {
-            console.log(`👂 Iniciando consumo de mensagens da fila: ${queueName}`);
+            console.log(`👂 Iniciando consumo de mensagens na fila: ${queueName}`);
 
             await this.channel.consume(queueName, async (msg) => {
                 if (msg !== null) {
                     try {
                         const content = msg.content.toString();
-                        console.log(`\n📨 Nova mensagem recebida no tópico ${config.rabbitmq.topic}:`);
+                        console.log(`\n📨 Mensagem recebida no tópico ${config.rabbitmq.topic}:`);
                         console.log(content);
 
                         // Parse da mensagem
@@ -79,10 +79,10 @@ class RabbitMQService {
 
                         // Confirmar processamento da mensagem
                         this.channel.ack(msg);
-                        console.log('✅ Mensagem processada com sucesso\n');
+                        console.log('✅ Mensagem processada com sucesso.\n');
 
                     } catch (error) {
-                        console.error('❌ Erro ao processar mensagem:', error.message);
+                        console.error('❌ Erro ao processar mensagem recebida:', error.message);
                         // Rejeitar mensagem e não recolocar na fila
                         this.channel.nack(msg, false, false);
                     }
@@ -90,7 +90,7 @@ class RabbitMQService {
             }, { noAck: false });
 
         } catch (error) {
-            console.error('❌ Erro ao iniciar consumo:', error.message);
+            console.error('❌ Falha ao iniciar o consumo de mensagens:', error.message);
         }
     }
 
@@ -98,15 +98,15 @@ class RabbitMQService {
         try {
             // Validar campos obrigatórios
             if (!notification.email) {
-                throw new Error('Email do destinatário não fornecido');
+                throw new Error('Campo "email" do destinatário ausente.');
             }
 
             if (!notification.subject && !notification.assunto) {
-                throw new Error('Assunto da mensagem não fornecido');
+                throw new Error('Campo de "assunto" ausente.');
             }
 
             if (!notification.message && !notification.mensagem) {
-                throw new Error('Mensagem não fornecida');
+                throw new Error('Campo de "mensagem" ausente.');
             }
 
             // Suportar tanto português quanto inglês nos campos
@@ -114,26 +114,26 @@ class RabbitMQService {
             const subject = notification.subject || notification.assunto;
             const message = notification.message || notification.mensagem;
 
-            console.log(`📧 Enviando email para: ${email}`);
+            console.log(`📧 Processando envio de e-mail para: ${email}`);
             console.log(`📋 Assunto: ${subject}`);
 
             // Enviar email
             const result = await emailService.sendEmail(email, subject, message);
 
             if (result.success) {
-                console.log(`✅ Notificação enviada com sucesso para ${email}`);
+                console.log(`✅ Notificação enviada com sucesso para ${email}.`);
             } else {
-                console.error(`❌ Falha ao enviar notificação: ${result.error}`);
+                console.error(`❌ Falha no envio da notificação: ${result.error}`);
             }
 
         } catch (error) {
-            console.error('❌ Erro ao processar notificação:', error.message);
+            console.error('❌ Erro no processamento da notificação:', error.message);
             throw error;
         }
     }
 
     async reconnect() {
-        console.log('🔄 Tentando reconectar em 5 segundos...');
+        console.log('🔄 Tentando reconexão em 5 segundos...');
         setTimeout(() => {
             this.connect();
         }, 5000);
@@ -147,9 +147,9 @@ class RabbitMQService {
             if (this.connection) {
                 await this.connection.close();
             }
-            console.log('👋 Conexão com RabbitMQ fechada');
+            console.log('👋 Conexões com o RabbitMQ encerradas corretamente.');
         } catch (error) {
-            console.error('❌ Erro ao fechar conexão:', error.message);
+            console.error('❌ Erro ao encerrar conexões:', error.message);
         }
     }
 }
