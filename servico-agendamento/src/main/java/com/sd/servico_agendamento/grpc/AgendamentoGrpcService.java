@@ -6,12 +6,12 @@ import com.sd.servico_agendamento.model.StatusConsulta;
 import com.sd.servico_agendamento.service.AgendamentoService;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
-import org.springframework.grpc.server.service.GrpcService;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@GrpcService
+@Service
 @RequiredArgsConstructor
 public class AgendamentoGrpcService extends AgendamentoServiceGrpc.AgendamentoServiceImplBase {
 

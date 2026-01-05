@@ -1,11 +1,11 @@
 package com.sd.servico_agendamento.mapper;
 
-import com.sd.servico_agendamento.dto.ConsultaDTO;
-import com.sd.servico_agendamento.grpc.stubs.ConsultaResponse;
 import com.sd.servico_agendamento.model.Consulta;
 import com.sd.servico_agendamento.model.Horario;
+import com.sd.servico_agendamento.dto.ConsultaDTO;
+import com.sd.servico_agendamento.dto.HorarioDTO;
+import com.sd.servico_agendamento.grpc.stubs.ConsultaResponse;
 import org.springframework.stereotype.Component;
-
 import java.time.format.DateTimeFormatter;
 
 @Component
@@ -41,6 +41,26 @@ public class AgendamentoMapper {
                 .setMedicoId(horario.getMedicoId())
                 .setDataHora(horario.getDataHora().format(formatter))
                 .setDisponivel(horario.isDisponivel())
+                .build();
+    }
+
+    public ConsultaDTO toDTO(ConsultaResponse response) {
+        return ConsultaDTO.builder()
+                .id(response.getId())
+                .pacienteId(response.getPacienteId())
+                .medicoId(response.getMedicoId())
+                .especialidade(response.getEspecialidade())
+                .dataHora(response.getDataHora())
+                .status(response.getStatus())
+                .build();
+    }
+
+    public HorarioDTO toDTO(com.sd.servico_agendamento.grpc.stubs.Horario horario) {
+        return HorarioDTO.builder()
+                .id(horario.getId())
+                .medicoId(horario.getMedicoId())
+                .dataHora(horario.getDataHora())
+                .disponivel(horario.getDisponivel())
                 .build();
     }
 }
