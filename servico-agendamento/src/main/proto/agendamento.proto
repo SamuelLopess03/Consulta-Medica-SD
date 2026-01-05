@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.sd.servico_agendamento.grpc.stubs";
+option java_outer_classname = "AgendamentoProto";
+
+package agendamento;
+
+service AgendamentoService {
+  rpc AgendarConsulta(AgendarConsultaRequest) returns (ConsultaResponse);
+  rpc ConsultarStatus(ConsultarStatusRequest) returns (ConsultaResponse);
+  rpc ListarHorariosDisponiveis(ListarHorariosRequest) returns (ListarHorariosResponse);
+  rpc CancelarConsulta(CancelarConsultaRequest) returns (ConsultaResponse);
+  rpc AtualizarStatusConsulta(AtualizarStatusRequest) returns (ConsultaResponse);
+}
+
+message ConsultaResponse {
+  int64 id = 1;
+  int64 paciente_id = 2;
+  int64 medico_id = 3;
+  string especialidade = 4;
+  string data_hora = 5;
+  string status = 6;
+  string mensagem = 7;
+}
+
+message AgendarConsultaRequest {
+  int64 paciente_id = 1;
+  int64 medico_id = 2;
+  string especialidade = 3;
+  string data_hora = 4;
+}
+
+message ConsultarStatusRequest {
+  int64 consulta_id = 1;
+}
+
+message ListarHorariosRequest {
+  int64 medico_id = 1;
+  string especialidade = 2;
+  string data = 3;
+}
+
+message ListarHorariosResponse {
+  repeated Horario disponiveis = 1;
+}
+
+message Horario {
+  int64 id = 1;
+  int64 medico_id = 2;
+  string data_hora = 3;
+  bool disponivel = 4;
+}
+
+message CancelarConsultaRequest {
+  int64 consulta_id = 1;
+}
+
+message AtualizarStatusRequest {
+  int64 consulta_id = 1;
+  string novo_status = 2;
+}
