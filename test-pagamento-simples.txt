@@ -1,0 +1,27 @@
+# ====================================================================
+# COMANDO SIMPLES PARA CRIAR PAGAMENTO
+# Copie e cole este comando no PowerShell
+# ====================================================================
+
+# ALTERE O E-MAIL AQUI ↓
+Invoke-RestMethod -Uri "http://localhost:8000/api/payloads" -Method POST -ContentType "application/json" -Body '{"agendamento_id": 1, "total": 150.00, "payment_method": "pix", "customer_email": "roddanadao@gmail.com"}'
+
+
+# ====================================================================
+# OUTROS COMANDOS ÚTEIS
+# ====================================================================
+
+# Consultar pagamento (substitua {id} pelo ID retornado)
+Invoke-RestMethod -Uri "http://localhost:8000/api/payloads/{id}" -Method GET
+
+# Confirmar pagamento (substitua {id} pelo ID retornado)
+Invoke-RestMethod -Uri "http://localhost:8000/api/payloads/{id}/pay" -Method POST
+
+# Ver logs do serviço de notificações
+docker logs -f servico-notificacoes
+
+# Ver logs do serviço de pagamentos
+docker logs -f laravel-api
+
+# Verificar status dos serviços
+docker compose ps

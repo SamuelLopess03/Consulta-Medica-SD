@@ -3,30 +3,21 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Instalar dependências
+# Instalar dependências do sistema
+RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/*
+
+# Instalar dependências Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar código da interface
 COPY user_interface.py .
 
+# Copiar script de inicialização
+COPY start-interface.sh /app/start-interface.sh
+RUN chmod +x /app/start-interface.sh
+
 # Expor porta da interface REST
 EXPOSE 5000
 
-# Aguardar serviço estar pronto
-RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/*
-
-# Script de inicialização
-COPY <<EOF /app/start.sh
-#!/bin/bash
-echo "Aguardando serviço de usuários..."
-while ! nc -z user_service 5001; do
-  sleep 1
-done
-echo "Serviço de usuários pronto!"
-python user_interface.py
-EOF
-
-RUN chmod +x /app/start.sh
-
-CMD ["/app/start.sh"]
+CMD ["/app/start-interface.sh"]

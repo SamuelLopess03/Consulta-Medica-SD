@@ -58,6 +58,8 @@ services:
       EMAIL_PASS: ${EMAIL_PASS}
       EMAIL_FROM: ${EMAIL_FROM:-Sistema de Consultas Médicas <noreply@consultamedica.com>}
       NODE_ENV: production
+    networks:
+      - consulta-medica-network
     restart: unless-stopped
 
   pagamentos:
@@ -109,9 +111,50 @@ services:
       - consulta-medica-network
     restart: unless-stopped
 
+  usuario-service:
+    build:
+      context: ./servico-usuario
+      dockerfile: Dockerfile.service
+    container_name: servico-usuario
+    environment:
+      DATABASE_URL: mysql://user:userpassword@db:3306/consultamedica
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: consultamedica
+      DB_USER: user
+      DB_PASSWORD: userpassword
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "5001:5001"
+    networks:
+      - consulta-medica-network
+    restart: unless-stopped
+
+  usuario-interface:
+    build:
+      context: ./servico-usuario
+      dockerfile: Dockerfile.interface
+    container_name: servico-usuario-interface
+    environment:
+      USER_SERVICE_HOST: servico-usuario
+      USER_SERVICE_PORT: 5001
+    depends_on:
+      - usuario-service
+    ports:
+      - "5000:5000"
+    networks:
+      - consulta-medica-network
+    restart: unless-stopped
+
 volumes:
   rabbitmq_data:
   db_data:
+
 
 networks:
   consulta-medica-network:

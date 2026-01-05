@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import jwt
 from models import User, UserRole
 from database import get_db, init_db, close_db
+from rabbitmq_publisher import publisher
 
 # Configurações
 HOST = '0.0.0.0'
@@ -21,6 +22,9 @@ class UserService:
     
     def __init__(self):
         self.secret_key = SECRET_KEY
+        # Conectar ao RabbitMQ
+        print("🔄 Conectando ao RabbitMQ...")
+        publisher.connect()
     
     def hash_password(self, password):
         """Gera hash da senha"""
@@ -78,6 +82,17 @@ class UserService:
             db.add(user)
             db.commit()
             db.refresh(user)
+            
+            # Publicar notificação de boas-vindas
+            try:
+                publisher.publish_notification(
+                    email=user.email,
+                    assunto='Bem-vindo ao Sistema de Consultas Médicas',
+                    mensagem=f'Olá {user.name}! Sua conta foi criada com sucesso. '
+                            f'Você está cadastrado como {user.role.value}.'
+                )
+            except Exception as e:
+                print(f"⚠️  Erro ao publicar notificação: {e}")
             
             return {
                 'success': True,
@@ -171,6 +186,16 @@ class UserService:
             db.commit()
             db.refresh(user)
             
+            # Publicar notificação de atualização
+            try:
+                publisher.publish_notification(
+                    email=user.email,
+                    assunto='Dados Atualizados',
+                    mensagem=f'Olá {user.name}! Seus dados foram atualizados com sucesso.'
+                )
+            except Exception as e:
+                print(f"⚠️  Erro ao publicar notificação: {e}")
+            
             return {
                 'success': True,
                 'message': 'Usuário atualizado com sucesso',
@@ -191,8 +216,23 @@ class UserService:
             if not user:
                 return {'success': False, 'message': 'Usuário não encontrado'}
             
+            # Salvar email antes de desativar
+            user_email = user.email
+            user_name = user.name
+            
             user.active = 0
             db.commit()
+            
+            # Publicar notificação de desativação
+            try:
+                publisher.publish_notification(
+                    email=user_email,
+                    assunto='Conta Desativada',
+                    mensagem=f'Olá {user_name}! Sua conta foi desativada. '
+                            f'Entre em contato com o suporte se precisar de ajuda.'
+                )
+            except Exception as e:
+                print(f"⚠️  Erro ao publicar notificação: {e}")
             
             return {
                 'success': True,

@@ -2,12 +2,21 @@
 Configuração do banco de dados
 """
 import os
+import pymysql
+pymysql.install_as_MySQLdb()  # Permite que PyMySQL seja usado como MySQLdb
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from models import Base
 
 # Configuração do banco de dados
-DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://user:password@db:5432/medical_system')
+DB_HOST = os.getenv('DB_HOST', 'db')
+DB_PORT = os.getenv('DB_PORT', '3306')
+DB_NAME = os.getenv('DB_NAME', 'consultamedica')
+DB_USER = os.getenv('DB_USER', 'user')
+DB_PASSWORD = os.getenv('DB_PASSWORD', 'userpassword')
+
+DATABASE_URL = os.getenv('DATABASE_URL', f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}')
 
 # Criar engine
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, echo=False)

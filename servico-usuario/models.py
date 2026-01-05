@@ -17,7 +17,7 @@ class UserRole(enum.Enum):
 
 class User(Base):
     """Modelo de Usuário"""
-    __tablename__ = 'users'
+    __tablename__ = 'app_users'
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
