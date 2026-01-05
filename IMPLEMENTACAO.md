@@ -1,52 +1,81 @@
-# Guia de Integração: Serviço de Notificações
+# 🏥 Guia de Integração: Sistema de Consultas Médicas
 
-Este documento descreve como outros módulos do sistema (como Usuários, Agendamento ou Pagamentos) devem se conectar e enviar mensagens para o **Serviço de Notificações**.
+Este documento orienta os membros do grupo sobre como integrar seus serviços (Usuários, Agendamento, etc.) com os módulos de **Pagamento** e **Notificações**.
 
 ---
 
-## 1. Configurações de Conexão (RabbitMQ)
+## 🏗️ 1. Como Rodar o Sistema (Docker)
 
-Para se comunicar com o broker de mensagens, utilize as seguintes credenciais:
+Para que todos os serviços se comuniquem, utilize o orquestrador na raiz do projeto:
 
-*   **Protocolo:** AMQP
-*   **Host:** `localhost` (ou o IP/Hostname do container `rabbitmq`)
-*   **Porta:** `5672`
-*   **Usuário:** `admin`
-*   **Senha:** `admin`
+1.  **Configure o Ambiente:** Copie o arquivo `.env.example` para `.env` na raiz e preencha as credenciais de e-mail (SMTP).
+2.  **Suba os Serviços:**
+    ```powershell
+    docker compose up -d
+    ```
+3.  **Acompanhe os Logs:**
+    ```powershell
+    docker compose logs -f notificacoes
+    ```
 
-## 2. Parâmetros de Roteamento
+---
 
-O serviço de notificações utiliza o modelo **Publisher/Subscriber** com roteamento por tópicos:
+## 📨 2. Enviando Notificações (RabbitMQ)
+
+Qualquer serviço pode disparar e-mails enviando uma mensagem para o Broker:
 
 *   **Exchange:** `notificacoes_exchange`
-*   **Tipo da Exchange:** `topic`
-*   **Routing Key (Tópico):** `sd/notificacoes`
+*   **Tipo:** `topic`
+*   **Routing Key:** `sd/notificacoes`
+*   **Host (Interno Docker):** `rabbitmq` (porta 5672)
 
-## 3. Estrutura da Mensagem (Payload)
-
-As mensagens devem ser enviadas em formato **JSON**. O serviço é flexível e aceita campos tanto em português quanto em inglês:
-
+### Estrutura do JSON (Payload):
 ```json
 {
-  "email": "destinatario@exemplo.com",
-  "assunto": "Confirmação de Consulta",
-  "mensagem": "Olá! Sua consulta foi agendada para o dia 10/01 às 14:00."
+  "email": "cliente@exemplo.com",
+  "assunto": "Assunto da Mensagem",
+  "mensagem": "Conteúdo do e-mail aqui."
 }
 ```
 
-### Campos Aceitos:
-| Campo (PT) | Campo (EN) | Obrigatório | Descrição |
-| :--- | :--- | :--- | :--- |
-| `email` | `email` | Sim | E-mail do destinatário. |
-| `assunto` | `subject` | Sim | Assunto que aparecerá no e-mail. |
-| `mensagem` | `message` | Sim | Conteúdo principal da notificação. |
+---
+
+## 💳 3. Integrando com o Serviço de Pagamentos
+
+A API de Pagamentos está disponível em `http://localhost:8000`.
+
+### Criar um Pagamento (Gera notificação automática):
+Envie um **POST** para `/api/payloads`.
 
 ---
 
-## 4. Fluxo de Execução
+## 🧪 4. Como Testar a Integração
 
-1.  **Agente Emissor:** Um serviço (ex: Agendamento) detecta um evento que exige notificação.
-2.  **Publicação:** O serviço conecta ao RabbitMQ e envia o JSON para a `notificacoes_exchange` com a chave `sd/notificacoes`.
-3.  **Consumo:** O **Serviço de Notificações** (Node.js) captura essa mensagem automaticamente.
-4.  **Processamento:** O serviço valida o JSON e utiliza o **Nodemailer** para enviar o e-mail via SMTP.
-5.  **Confirmação (ACK):** Após o envio bem-sucedido, o serviço avisa o RabbitMQ que a mensagem foi processada e pode ser removida da fila.
+Para validar se os serviços estão conversando, use o comando abaixo no PowerShell. Ele criará um pagamento que, por sua vez, enviará uma mensagem ao RabbitMQ para que o serviço de notificações dispare o e-mail.
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:8000/api/payloads" `
+  -Method POST `
+  -ContentType "application/json" `
+  -Body '{
+    "agendamento_id": 10,
+    "total": 150.00,
+    "payment_method": "pix",
+    "customer_email": "seu-email@gmail.com"
+  }'
+```
+
+### Verificação de Sucesso:
+1.  **Resposta da API:** Você receberá um JSON com o `id` do pagamento e status `pending`.
+2.  **Logs de Notificação:** No terminal do Docker, aparecerá: `📨 Nova mensagem recebida no tópico sd/notificacoes`.
+3.  **E-mail Real:** O destinatário receberá o e-mail formatado.
+
+---
+
+## 🛠️ 5. FAQ de Integração
+
+*   **P: Meu serviço não conecta no RabbitMQ.**
+    *   R: Se estiver rodando via Docker, use o host `rabbitmq`. Se estiver rodando local (fora do Docker), use `localhost`.
+*   **P: Onde vejo as mensagens trafegando?**
+    *   R: Acesse o painel do RabbitMQ em `http://localhost:15672` (admin/admin).
