@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Banco de Dados PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: medical_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: medical_system
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - medical_network
+
+  # Serviço de Usuários (Socket Server)
+  user_service:
+    build:
+      context: ./user_service
+      dockerfile: Dockerfile.service
+    container_name: user_service
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/medical_system
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "5001:5001"
+    networks:
+      - medical_network
+    restart: unless-stopped
+
+  # Interface REST do Serviço de Usuários
+  user_interface:
+    build:
+      context: ./user_service
+      dockerfile: Dockerfile.interface
+    container_name: user_interface
+    environment:
+      USER_SERVICE_HOST: user_service
+      USER_SERVICE_PORT: 5001
+    depends_on:
+      - user_service
+    ports:
+      - "5000:5000"
+    networks:
+      - medical_network
+    restart: unless-stopped
+
+  # RabbitMQ para mensageria (para o Serviço de Notificações)
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: medical_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    networks:
+      - medical_network
+    restart: unless-stopped
+
+networks:
+  medical_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

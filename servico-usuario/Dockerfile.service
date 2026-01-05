@@ -1,0 +1,34 @@
+# Dockerfile para o Serviço de Usuários (Socket Server)
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Instalar dependências
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar código do serviço
+COPY models.py .
+COPY database.py .
+COPY user_service.py .
+
+# Expor porta do serviço
+EXPOSE 5001
+
+# Aguardar banco de dados estar pronto
+RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/*
+
+# Script de inicialização
+COPY <<EOF /app/start.sh
+#!/bin/bash
+echo "Aguardando banco de dados..."
+while ! nc -z db 5432; do
+  sleep 1
+done
+echo "Banco de dados pronto!"
+python user_service.py
+EOF
+
+RUN chmod +x /app/start.sh
+
+CMD ["/app/start.sh"]
