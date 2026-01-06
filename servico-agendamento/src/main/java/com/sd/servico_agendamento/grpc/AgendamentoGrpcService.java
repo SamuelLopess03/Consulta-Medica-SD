@@ -25,9 +25,9 @@ public class AgendamentoGrpcService extends AgendamentoServiceGrpc.AgendamentoSe
                     request.getPacienteId(),
                     request.getPacienteEmail(),
                     request.getMedicoId(),
+                    request.getMedicoEmail(),
                     request.getEspecialidade(),
-                    request.getDataHora()
-            );
+                    request.getDataHora());
             responseObserver.onNext(mapper.toGrpcResponse(consulta));
             responseObserver.onCompleted();
         } catch (Exception e) {
@@ -43,17 +43,16 @@ public class AgendamentoGrpcService extends AgendamentoServiceGrpc.AgendamentoSe
                 .map(mapper::toGrpcResponse)
                 .ifPresentOrElse(
                         responseObserver::onNext,
-                        () -> responseObserver.onError(io.grpc.Status.NOT_FOUND.asRuntimeException())
-                );
+                        () -> responseObserver.onError(io.grpc.Status.NOT_FOUND.asRuntimeException()));
         responseObserver.onCompleted();
     }
 
     @Override
-    public void listarHorariosDisponiveis(ListarHorariosRequest request, StreamObserver<ListarHorariosResponse> responseObserver) {
+    public void listarHorariosDisponiveis(ListarHorariosRequest request,
+            StreamObserver<ListarHorariosResponse> responseObserver) {
         List<com.sd.servico_agendamento.model.Horario> disponiveis = agendamentoService.listarDisponiveis(
                 request.getMedicoId(),
-                request.getEspecialidade()
-        );
+                request.getEspecialidade());
 
         ListarHorariosResponse response = ListarHorariosResponse.newBuilder()
                 .addAllDisponiveis(disponiveis.stream()
@@ -79,12 +78,12 @@ public class AgendamentoGrpcService extends AgendamentoServiceGrpc.AgendamentoSe
     }
 
     @Override
-    public void atualizarStatusConsulta(AtualizarStatusRequest request, StreamObserver<ConsultaResponse> responseObserver) {
+    public void atualizarStatusConsulta(AtualizarStatusRequest request,
+            StreamObserver<ConsultaResponse> responseObserver) {
         try {
             com.sd.servico_agendamento.model.Consulta consulta = agendamentoService.atualizarStatus(
                     request.getConsultaId(),
-                    StatusConsulta.valueOf(request.getNovoStatus())
-            );
+                    StatusConsulta.valueOf(request.getNovoStatus()));
             responseObserver.onNext(mapper.toGrpcResponse(consulta));
             responseObserver.onCompleted();
         } catch (Exception e) {

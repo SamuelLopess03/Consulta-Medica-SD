@@ -13,11 +13,13 @@ public class AgendamentoGrpcClient {
 
     private final AgendamentoServiceGrpc.AgendamentoServiceBlockingStub stub;
 
-    public ConsultaResponse agendar(Long pacienteId, String pacienteEmail, Long medicoId, String especialidade, String dataHora) {
+    public ConsultaResponse agendar(Long pacienteId, String pacienteEmail, Long medicoId, String medicoEmail,
+            String especialidade, String dataHora) {
         AgendarConsultaRequest request = AgendarConsultaRequest.newBuilder()
                 .setPacienteId(pacienteId)
                 .setPacienteEmail(pacienteEmail)
                 .setMedicoId(medicoId)
+                .setMedicoEmail(medicoEmail)
                 .setEspecialidade(especialidade)
                 .setDataHora(dataHora)
                 .build();

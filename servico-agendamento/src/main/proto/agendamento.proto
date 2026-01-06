@@ -30,6 +30,7 @@ message AgendarConsultaRequest {
   string especialidade = 3;
   string data_hora = 4;
   string paciente_email = 5;
+  string medico_email = 6;
 }
 
 message ConsultarStatusRequest {

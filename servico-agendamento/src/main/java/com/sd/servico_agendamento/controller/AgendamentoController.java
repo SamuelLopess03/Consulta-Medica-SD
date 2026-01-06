@@ -26,9 +26,9 @@ public class AgendamentoController {
                 request.getPacienteId(),
                 request.getPacienteEmail(),
                 request.getMedicoId(),
+                request.getMedicoEmail(),
                 request.getEspecialidade(),
-                request.getDataHora()
-        );
+                request.getDataHora());
         return ResponseEntity.ok(mapper.toDTO(response));
     }
 
@@ -46,12 +46,12 @@ public class AgendamentoController {
     public ResponseEntity<List<HorarioDTO>> listarHorarios(
             @RequestParam Long medicoId,
             @RequestParam String especialidade) {
-        
+
         List<HorarioDTO> dtos = grpcClient.listarHorarios(medicoId, especialidade)
                 .stream()
                 .map(mapper::toDTO)
                 .collect(Collectors.toList());
-        
+
         return ResponseEntity.ok(dtos);
     }
 
@@ -74,6 +74,7 @@ public class AgendamentoController {
         private Long pacienteId;
         private String pacienteEmail;
         private Long medicoId;
+        private String medicoEmail;
         private String especialidade;
         private String dataHora;
     }

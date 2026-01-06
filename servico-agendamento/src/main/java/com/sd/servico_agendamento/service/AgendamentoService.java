@@ -28,11 +28,14 @@ public class AgendamentoService {
     private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     @Transactional
-    public Consulta agendar(Long pacienteId, String pacienteEmail, Long medicoId, String especialidade, String dataHoraStr) {
+    public Consulta agendar(Long pacienteId, String pacienteEmail, Long medicoId, String medicoEmail,
+            String especialidade, String dataHoraStr) {
         LocalDateTime dataHora = LocalDateTime.parse(dataHoraStr, formatter);
 
+        // ... (lógica de horário existente mantida) ...
+
         Optional<Horario> horarioOpt = horarioRepository.findByMedicoIdAndDataHora(medicoId, dataHora);
-        
+
         Horario horario;
         if (horarioOpt.isPresent()) {
             horario = horarioOpt.get();
@@ -63,12 +66,20 @@ public class AgendamentoService {
 
         Consulta salva = consultaRepository.save(consulta);
 
-        // Integração RabbitMQ: Notificar Agendamento
+        // Integração RabbitMQ: Notificar Agendamento (Paciente)
         notificationProducer.enviarNotificacao(
-                pacienteEmail, 
-                "Consulta Agendada", 
-                String.format("Olá! Sua consulta de %s foi agendada para %s.", especialidade, dataHoraStr)
-        );
+                pacienteEmail,
+                "Consulta Agendada",
+                String.format("Olá! Sua consulta de %s foi agendada para %s.", especialidade, dataHoraStr));
+
+        // Integração RabbitMQ: Notificar Agendamento (Médico)
+        if (medicoEmail != null && !medicoEmail.isEmpty()) {
+            notificationProducer.enviarNotificacao(
+                    medicoEmail,
+                    "Nova Consulta Agendada",
+                    String.format("Olá Doutor(a)! Uma nova consulta de %s foi agendada para %s.", especialidade,
+                            dataHoraStr));
+        }
 
         // Integração Pagamentos: Solicitar Pagamento
         pagamentoClient.solicitarPagamento(PagamentoRequestDTO.builder()
@@ -99,7 +110,7 @@ public class AgendamentoService {
         }
 
         consulta.setStatus(StatusConsulta.CANCELADA);
-        
+
         Horario horario = consulta.getHorario();
         horario.setDisponivel(true);
         horarioRepository.save(horario);
@@ -110,9 +121,8 @@ public class AgendamentoService {
         notificationProducer.enviarNotificacao(
                 salva.getPacienteEmail(),
                 "Consulta Cancelada",
-                String.format("Sua consulta de %s para o dia %s foi cancelada.", 
-                        salva.getEspecialidade(), salva.getHorario().getDataHora().format(formatter))
-        );
+                String.format("Sua consulta de %s para o dia %s foi cancelada.",
+                        salva.getEspecialidade(), salva.getHorario().getDataHora().format(formatter)));
 
         return salva;
     }
@@ -121,7 +131,7 @@ public class AgendamentoService {
     public Consulta atualizarStatus(Long id, StatusConsulta novoStatus) {
         Consulta consulta = consultaRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Consulta não encontrada."));
-        
+
         consulta.setStatus(novoStatus);
         Consulta salva = consultaRepository.save(consulta);
 
@@ -129,11 +139,10 @@ public class AgendamentoService {
         notificationProducer.enviarNotificacao(
                 salva.getPacienteEmail(),
                 "Atualização de Consulta",
-                String.format("O status da sua consulta de %s foi atualizado para: %s.", 
-                        salva.getEspecialidade(), novoStatus)
-        );
+                String.format("O status da sua consulta de %s foi atualizado para: %s.",
+                        salva.getEspecialidade(), novoStatus));
 
         return salva;
     }
-    
+
 }
