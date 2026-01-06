@@ -29,6 +29,8 @@ message AgendarConsultaRequest {
   int64 medico_id = 2;
   string especialidade = 3;
   string data_hora = 4;
+  string paciente_email = 5;
+  string medico_email = 6;
 }
 
 message ConsultarStatusRequest {

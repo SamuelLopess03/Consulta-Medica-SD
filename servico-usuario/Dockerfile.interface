@@ -15,6 +15,7 @@ COPY user_interface.py .
 
 # Copiar script de inicialização
 COPY start-interface.sh /app/start-interface.sh
+RUN sed -i 's/\r$//' /app/start-interface.sh
 RUN chmod +x /app/start-interface.sh
 
 # Expor porta da interface REST

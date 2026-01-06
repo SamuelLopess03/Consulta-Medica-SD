@@ -18,6 +18,7 @@ COPY rabbitmq_publisher.py .
 
 # Copiar script de inicialização
 COPY start-service.sh /app/start-service.sh
+RUN sed -i 's/\r$//' /app/start-service.sh
 RUN chmod +x /app/start-service.sh
 
 # Expor porta do serviço

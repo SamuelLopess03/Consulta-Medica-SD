@@ -6,12 +6,12 @@ import com.sd.servico_agendamento.model.StatusConsulta;
 import com.sd.servico_agendamento.service.AgendamentoService;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
-import org.springframework.grpc.server.service.GrpcService;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@GrpcService
+@Service
 @RequiredArgsConstructor
 public class AgendamentoGrpcService extends AgendamentoServiceGrpc.AgendamentoServiceImplBase {
 
@@ -23,10 +23,11 @@ public class AgendamentoGrpcService extends AgendamentoServiceGrpc.AgendamentoSe
         try {
             com.sd.servico_agendamento.model.Consulta consulta = agendamentoService.agendar(
                     request.getPacienteId(),
+                    request.getPacienteEmail(),
                     request.getMedicoId(),
+                    request.getMedicoEmail(),
                     request.getEspecialidade(),
-                    request.getDataHora()
-            );
+                    request.getDataHora());
             responseObserver.onNext(mapper.toGrpcResponse(consulta));
             responseObserver.onCompleted();
         } catch (Exception e) {
@@ -42,17 +43,16 @@ public class AgendamentoGrpcService extends AgendamentoServiceGrpc.AgendamentoSe
                 .map(mapper::toGrpcResponse)
                 .ifPresentOrElse(
                         responseObserver::onNext,
-                        () -> responseObserver.onError(io.grpc.Status.NOT_FOUND.asRuntimeException())
-                );
+                        () -> responseObserver.onError(io.grpc.Status.NOT_FOUND.asRuntimeException()));
         responseObserver.onCompleted();
     }
 
     @Override
-    public void listarHorariosDisponiveis(ListarHorariosRequest request, StreamObserver<ListarHorariosResponse> responseObserver) {
+    public void listarHorariosDisponiveis(ListarHorariosRequest request,
+            StreamObserver<ListarHorariosResponse> responseObserver) {
         List<com.sd.servico_agendamento.model.Horario> disponiveis = agendamentoService.listarDisponiveis(
                 request.getMedicoId(),
-                request.getEspecialidade()
-        );
+                request.getEspecialidade());
 
         ListarHorariosResponse response = ListarHorariosResponse.newBuilder()
                 .addAllDisponiveis(disponiveis.stream()
@@ -78,12 +78,12 @@ public class AgendamentoGrpcService extends AgendamentoServiceGrpc.AgendamentoSe
     }
 
     @Override
-    public void atualizarStatusConsulta(AtualizarStatusRequest request, StreamObserver<ConsultaResponse> responseObserver) {
+    public void atualizarStatusConsulta(AtualizarStatusRequest request,
+            StreamObserver<ConsultaResponse> responseObserver) {
         try {
             com.sd.servico_agendamento.model.Consulta consulta = agendamentoService.atualizarStatus(
                     request.getConsultaId(),
-                    StatusConsulta.valueOf(request.getNovoStatus())
-            );
+                    StatusConsulta.valueOf(request.getNovoStatus()));
             responseObserver.onNext(mapper.toGrpcResponse(consulta));
             responseObserver.onCompleted();
         } catch (Exception e) {
