@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Payload;
 use App\Services\RabbitMQService;
+use Illuminate\Support\Facades\Http;
 
 class PayloadController extends Controller
 {
@@ -30,6 +31,12 @@ class PayloadController extends Controller
                 'assunto' => 'Confirmação de Pagamento',
                 'mensagem' => "Seu pagamento de R$ {$payload->total} foi realizado com sucesso."
             ]
+        );
+
+        $response = Http::withQueryParameters([
+            'status' => 'AGENDADA'
+        ])->put(
+            "http://agendamento:8080/api/agendamentos/{$payload->agendamento_id}/status"
         );
 
         return response()->json([
@@ -127,6 +134,12 @@ class PayloadController extends Controller
                 'assunto' => 'Cancelamento do Pagamento',
                 'mensagem' => "Seu pagamento foi cancelado com sucesso."
             ]
+        );
+
+        $response = Http::withQueryParameters([
+            'status' => 'CANCELADA'
+        ])->put(
+            "http://agendamento:8080/api/agendamentos/{$payload->agendamento_id}/status"
         );
 
         return response()->json(null, 204);
