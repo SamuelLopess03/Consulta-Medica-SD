@@ -26,13 +26,20 @@ public class AgendamentoService {
     private final NotificationProducer notificationProducer;
     private final PagamentoClient pagamentoClient;
     private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final int DURACAO_CONSULTA_MINUTOS = 60;
 
     @Transactional
     public Consulta agendar(Long pacienteId, String pacienteEmail, Long medicoId, String medicoEmail,
             String especialidade, String dataHoraStr) {
         LocalDateTime dataHora = LocalDateTime.parse(dataHoraStr, formatter);
 
-        // ... (lógica de horário existente mantida) ...
+        // Validação de Sobreposição: Não permitir consultas no intervalo da duração
+        LocalDateTime inicioIntervalo = dataHora.minusMinutes(DURACAO_CONSULTA_MINUTOS - 1);
+        LocalDateTime fimIntervalo = dataHora.plusMinutes(DURACAO_CONSULTA_MINUTOS - 1);
+        
+        if (consultaRepository.existsOverlapping(medicoId, inicioIntervalo, fimIntervalo)) {
+            throw new RuntimeException("O médico já possui uma consulta agendada em um horário próximo a este.");
+        }
 
         Optional<Horario> horarioOpt = horarioRepository.findByMedicoIdAndDataHora(medicoId, dataHora);
 
@@ -58,7 +65,7 @@ public class AgendamentoService {
                 .medicoId(medicoId)
                 .especialidade(especialidade)
                 .horario(horario)
-                .status(StatusConsulta.AGENDADA)
+                .status(StatusConsulta.PENDENTE_VALIDACAO)
                 .build();
 
         horario.setDisponivel(false);
@@ -69,15 +76,15 @@ public class AgendamentoService {
         // Integração RabbitMQ: Notificar Agendamento (Paciente)
         notificationProducer.enviarNotificacao(
                 pacienteEmail,
-                "Consulta Agendada",
-                String.format("Olá! Sua consulta de %s foi agendada para %s.", especialidade, dataHoraStr));
+                "Consulta Criada",
+                String.format("Olá! Sua consulta de %s foi criada para %s. Para confirmar o agendamento, realize o pagamento via o link/método enviado.", especialidade, dataHoraStr));
 
         // Integração RabbitMQ: Notificar Agendamento (Médico)
         if (medicoEmail != null && !medicoEmail.isEmpty()) {
             notificationProducer.enviarNotificacao(
                     medicoEmail,
-                    "Nova Consulta Agendada",
-                    String.format("Olá Doutor(a)! Uma nova consulta de %s foi agendada para %s.", especialidade,
+                    "Nova Consulta Criada (Aguardando Pagamento)",
+                    String.format("Olá Doutor(a)! Uma nova solicitação de consulta de %s foi criada para %s. O agendamento será confirmado após o pagamento do paciente.", especialidade,
                             dataHoraStr));
         }
 

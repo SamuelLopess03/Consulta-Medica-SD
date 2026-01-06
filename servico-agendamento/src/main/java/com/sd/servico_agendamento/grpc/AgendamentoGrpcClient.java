@@ -17,9 +17,9 @@ public class AgendamentoGrpcClient {
             String especialidade, String dataHora) {
         AgendarConsultaRequest request = AgendarConsultaRequest.newBuilder()
                 .setPacienteId(pacienteId)
-                .setPacienteEmail(pacienteEmail)
+                .setPacienteEmail(pacienteEmail != null ? pacienteEmail : "")
                 .setMedicoId(medicoId)
-                .setMedicoEmail(medicoEmail)
+                .setMedicoEmail(medicoEmail != null ? medicoEmail : "")
                 .setEspecialidade(especialidade)
                 .setDataHora(dataHora)
                 .build();
