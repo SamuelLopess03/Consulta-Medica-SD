@@ -1,5 +1,8 @@
 package com.sd.servico_agendamento.service;
 
+import com.sd.servico_agendamento.client.PagamentoClient;
+import com.sd.servico_agendamento.dto.PagamentoRequestDTO;
+import com.sd.servico_agendamento.messaging.NotificationProducer;
 import com.sd.servico_agendamento.model.Consulta;
 import com.sd.servico_agendamento.model.Horario;
 import com.sd.servico_agendamento.model.StatusConsulta;
@@ -20,10 +23,12 @@ public class AgendamentoService {
 
     private final ConsultaRepository consultaRepository;
     private final HorarioRepository horarioRepository;
+    private final NotificationProducer notificationProducer;
+    private final PagamentoClient pagamentoClient;
     private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     @Transactional
-    public Consulta agendar(Long pacienteId, Long medicoId, String especialidade, String dataHoraStr) {
+    public Consulta agendar(Long pacienteId, String pacienteEmail, Long medicoId, String especialidade, String dataHoraStr) {
         LocalDateTime dataHora = LocalDateTime.parse(dataHoraStr, formatter);
 
         Optional<Horario> horarioOpt = horarioRepository.findByMedicoIdAndDataHora(medicoId, dataHora);
@@ -46,6 +51,7 @@ public class AgendamentoService {
 
         Consulta consulta = Consulta.builder()
                 .pacienteId(pacienteId)
+                .pacienteEmail(pacienteEmail)
                 .medicoId(medicoId)
                 .especialidade(especialidade)
                 .horario(horario)
@@ -55,7 +61,24 @@ public class AgendamentoService {
         horario.setDisponivel(false);
         horarioRepository.save(horario);
 
-        return consultaRepository.save(consulta);
+        Consulta salva = consultaRepository.save(consulta);
+
+        // Integração RabbitMQ: Notificar Agendamento
+        notificationProducer.enviarNotificacao(
+                pacienteEmail, 
+                "Consulta Agendada", 
+                String.format("Olá! Sua consulta de %s foi agendada para %s.", especialidade, dataHoraStr)
+        );
+
+        // Integração Pagamentos: Solicitar Pagamento
+        pagamentoClient.solicitarPagamento(PagamentoRequestDTO.builder()
+                .agendamentoId(salva.getId())
+                .total(150.0) // Valor fixo simulado
+                .paymentMethod("pix")
+                .customerEmail(pacienteEmail)
+                .build());
+
+        return salva;
     }
 
     public Optional<Consulta> buscarPorId(Long id) {
@@ -81,7 +104,17 @@ public class AgendamentoService {
         horario.setDisponivel(true);
         horarioRepository.save(horario);
 
-        return consultaRepository.save(consulta);
+        Consulta salva = consultaRepository.save(consulta);
+
+        // Integração RabbitMQ: Notificar Cancelamento
+        notificationProducer.enviarNotificacao(
+                salva.getPacienteEmail(),
+                "Consulta Cancelada",
+                String.format("Sua consulta de %s para o dia %s foi cancelada.", 
+                        salva.getEspecialidade(), salva.getHorario().getDataHora().format(formatter))
+        );
+
+        return salva;
     }
 
     @Transactional
@@ -90,7 +123,17 @@ public class AgendamentoService {
                 .orElseThrow(() -> new RuntimeException("Consulta não encontrada."));
         
         consulta.setStatus(novoStatus);
-        return consultaRepository.save(consulta);
+        Consulta salva = consultaRepository.save(consulta);
+
+        // Integração RabbitMQ: Notificar Mudança de Status
+        notificationProducer.enviarNotificacao(
+                salva.getPacienteEmail(),
+                "Atualização de Consulta",
+                String.format("O status da sua consulta de %s foi atualizado para: %s.", 
+                        salva.getEspecialidade(), novoStatus)
+        );
+
+        return salva;
     }
     
 }

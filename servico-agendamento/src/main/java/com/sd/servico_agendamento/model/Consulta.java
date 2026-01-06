@@ -23,6 +23,9 @@ public class Consulta {
     @Column(name = "paciente_id", nullable = false)
     private Long pacienteId;
 
+    @Column(name = "paciente_email")
+    private String pacienteEmail;
+
     @Column(name = "medico_id", nullable = false)
     private Long medicoId;
 

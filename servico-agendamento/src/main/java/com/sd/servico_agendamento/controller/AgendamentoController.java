@@ -24,6 +24,7 @@ public class AgendamentoController {
     public ResponseEntity<ConsultaDTO> agendar(@RequestBody ConsultaRequest request) {
         ConsultaResponse response = grpcClient.agendar(
                 request.getPacienteId(),
+                request.getPacienteEmail(),
                 request.getMedicoId(),
                 request.getEspecialidade(),
                 request.getDataHora()
@@ -71,6 +72,7 @@ public class AgendamentoController {
     @lombok.Data
     public static class ConsultaRequest {
         private Long pacienteId;
+        private String pacienteEmail;
         private Long medicoId;
         private String especialidade;
         private String dataHora;

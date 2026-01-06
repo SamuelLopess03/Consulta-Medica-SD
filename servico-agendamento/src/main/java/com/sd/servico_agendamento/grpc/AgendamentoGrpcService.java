@@ -23,6 +23,7 @@ public class AgendamentoGrpcService extends AgendamentoServiceGrpc.AgendamentoSe
         try {
             com.sd.servico_agendamento.model.Consulta consulta = agendamentoService.agendar(
                     request.getPacienteId(),
+                    request.getPacienteEmail(),
                     request.getMedicoId(),
                     request.getEspecialidade(),
                     request.getDataHora()
