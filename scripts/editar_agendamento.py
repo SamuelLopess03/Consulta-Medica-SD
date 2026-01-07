@@ -41,7 +41,7 @@ def main():
             aid = input(f"{Colors.CYAN}ID do Agendamento: {Colors.END}").strip()
             
             print(f"\n{Colors.BOLD}Novos Status Possíveis:{Colors.END}")
-            status_list = ["AGENDADA", "CONFIRMADA", "CANCELADA", "REALIZADA"]
+            status_list = ["AGENDADA", "PENDENTE_VALIDACAO", "CANCELADA", "CONCLUIDA"]
             for i, s in enumerate(status_list, 1):
                 print(f"  {i}. {s}")
             
