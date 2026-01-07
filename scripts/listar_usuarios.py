@@ -43,8 +43,21 @@ def print_success(message):
     """Imprime mensagem de sucesso"""
     print(f"{Colors.GREEN}✅ {message}{Colors.END}")
 
+def normalize_role(role: str) -> str:
+    """Normaliza o nome da role para inglês (padrão interno)"""
+    role = role.upper()
+    mapa = {
+        "ADMINISTRADOR": "ADMIN",
+        "MEDICO": "DOCTOR",
+        "PACIENTE": "PATIENT",
+        "RECEPCIONISTA": "RECEPTIONIST" 
+    }
+    return mapa.get(role, role)
+
 def get_role_emoji(role: str) -> str:
     """Retorna emoji correspondente ao tipo de usuário"""
+    # Garantir normalização
+    role = normalize_role(role)
     emojis = {
         "PATIENT": "👤",
         "DOCTOR": "👨‍⚕️",
@@ -55,6 +68,8 @@ def get_role_emoji(role: str) -> str:
 
 def get_role_color(role: str) -> str:
     """Retorna cor correspondente ao tipo de usuário"""
+    # Garantir normalização
+    role = normalize_role(role)
     cores = {
         "PATIENT": Colors.BLUE,
         "DOCTOR": Colors.GREEN,
@@ -155,14 +170,14 @@ def exibir_usuarios_tabela(usuarios: List[Dict]):
     
     print(f"\n{Colors.BOLD}Total de usuários: {len(usuarios)}{Colors.END}\n")
     
-    # Cabeçalho da tabela
-    print(f"{Colors.BOLD}{'ID':<5} {'Tipo':<18} {'Nome':<25} {'CPF':<18} {'Email':<30} {'Telefone':<15}{Colors.END}")
-    print(f"{Colors.BOLD}{'-'*5} {'-'*18} {'-'*25} {'-'*18} {'-'*30} {'-'*15}{Colors.END}")
+    # Cabeçalho da tabela (Aumentando espaçamento para compensar cores/emojis)
+    print(f"{Colors.BOLD}{'ID':<5} {'Tipo':<25} {'Nome':<25} {'CPF':<15} {'Email':<30} {'Telefone':<15}{Colors.END}")
+    print(f"{Colors.BOLD}{'-'*5} {'-'*25} {'-'*25} {'-'*15} {'-'*30} {'-'*15}{Colors.END}")
     
     # Linhas da tabela
     for user in usuarios:
         user_id = str(user.get('id', 'N/A'))
-        role = user.get('role', 'UNKNOWN')
+        role = normalize_role(user.get('role', 'UNKNOWN')) # Normalizando
         nome = user.get('name', 'N/A')[:25]
         cpf = user.get('cpf', 'N/A')
         email = user.get('email', 'N/A')[:30]
@@ -172,7 +187,8 @@ def exibir_usuarios_tabela(usuarios: List[Dict]):
         cor = get_role_color(role)
         role_display = f"{emoji} {role}"
         
-        print(f"{user_id:<5} {cor}{role_display:<18}{Colors.END} {nome:<25} {cpf:<18} {email:<30} {telefone:<15}")
+        # Imprimindo com formatação manual para evitar quebras com ANSI
+        print(f"{user_id:<5} {cor}{role_display:<25}{Colors.END} {nome:<25} {cpf:<15} {email:<30} {telefone:<15}")
     
     print()
 
@@ -186,7 +202,7 @@ def exibir_usuarios_detalhado(usuarios: List[Dict]):
     
     for i, user in enumerate(usuarios, 1):
         user_id = user.get('id', 'N/A')
-        role = user.get('role', 'UNKNOWN')
+        role = normalize_role(user.get('role', 'UNKNOWN'))
         emoji = get_role_emoji(role)
         cor = get_role_color(role)
         
@@ -214,7 +230,7 @@ def exibir_estatisticas(usuarios: List[Dict]):
     }
     
     for user in usuarios:
-        role = user.get('role', 'UNKNOWN')
+        role = normalize_role(user.get('role', 'UNKNOWN'))
         if role in contagem:
             contagem[role] += 1
     
