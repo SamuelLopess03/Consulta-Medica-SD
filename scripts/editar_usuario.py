@@ -1,67 +1,81 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Script para Editar Usuário
+"""
+
 import sys
 import requests
+import getpass
+from utils import Colors, print_header, print_success, print_error, print_info
 
-def editar_usuario(usuario_id, nome=None, email=None, telefone=None, role=None):
-    API_URL = f"http://localhost:5000/users/{usuario_id}"
-    
-    # Primeiro, obter o usuário atual
-    response = requests.get(API_URL)
-    
-    if response.status_code != 200:
-        print(f"❌ Usuário não encontrado (ID: {usuario_id})")
-        return
-    
-    usuario_atual = response.json().get('user', response.json())
-    
-    # Atualizar apenas os campos fornecidos
-    payload = {
-        "name": nome or usuario_atual.get('name'),
-        "email": email or usuario_atual.get('email'),
-        "phone": telefone or usuario_atual.get('phone'),
-        "role": role or usuario_atual.get('role')
-    }
+API_URL = "http://localhost:5000/users"
+AUTH_URL = "http://localhost:5000/users/authenticate"
 
-    response = requests.put(
-        API_URL,
-        json=payload,
-        headers={"Content-Type": "application/json"}
-    )
-
+def autenticar():
+    print(f"\n{Colors.YELLOW}🔐 Autenticação Requerida (Admin ou Próprio Usuário){Colors.END}")
+    email = input(f"{Colors.CYAN}Email: {Colors.END}").strip()
+    senha = getpass.getpass(f"{Colors.CYAN}Senha: {Colors.END}")
+    
     try:
-        print("Status:", response.status_code)
-        print("Resposta:", response.json())
-    except Exception:
-        print("Resposta bruta:", response.text)
+        response = requests.post(AUTH_URL, json={"email": email, "password": senha}, timeout=5)
+        if response.status_code == 200:
+            return response.json()['token']
+        print_error("Falha na autenticação.")
+        return None
+    except:
+        print_error("Erro ao conectar.")
+        return None
+
+def editar_usuario(usuario_id, token, dados):
+    url = f"{API_URL}/{usuario_id}"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    
+    try:
+        print_info("Enviando atualização...")
+        response = requests.put(url, json=dados, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            print_success("Usuário atualizado com sucesso!")
+        else:
+            print_error(f"Erro ao atualizar! Status: {response.status_code}")
+            try:
+                print(response.json())
+            except:
+                print(response.text)
+    except Exception as e:
+        print_error(f"Erro: {str(e)}")
+
+def main():
+    try:
+        print_header("EDITAR USUÁRIO")
+        
+        token = autenticar()
+        if not token:
+            return
+
+        usuario_id = input(f"\n{Colors.CYAN}ID do Usuário a editar: {Colors.END}").strip()
+        
+        print(f"\n{Colors.BOLD}Novos Dados (Deixe em branco para manter):{Colors.END}")
+        nome = input(f"{Colors.CYAN}Novo Nome: {Colors.END}").strip()
+        email = input(f"{Colors.CYAN}Novo Email: {Colors.END}").strip()
+        telefone = input(f"{Colors.CYAN}Novo Telefone: {Colors.END}").strip()
+        role = input(f"{Colors.CYAN}Nova Role (PATIENT/DOCTOR/etc): {Colors.END}").strip().upper()
+        
+        dados = {}
+        if nome: dados['name'] = nome
+        if email: dados['email'] = email
+        if telefone: dados['phone'] = telefone
+        if role: dados['role'] = role
+        
+        if not dados:
+            print_info("Nenhuma alteração informada.")
+            return
+
+        editar_usuario(usuario_id, token, dados)
+            
+    except KeyboardInterrupt:
+        print("\nCancelado.")
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(
-            "Uso:\n"
-            "python editar_usuario.py <usuario_id> [--nome NOME] [--email EMAIL] "
-            "[--telefone TELEFONE] [--role ROLE]\n\n"
-            "Roles disponíveis: PATIENT, DOCTOR, RECEPTIONIST, ADMIN"
-        )
-        sys.exit(1)
-
-    usuario_id = sys.argv[1]
-    args = sys.argv[2:]
-    
-    params = {}
-    i = 0
-    while i < len(args):
-        if args[i] == '--nome' and i+1 < len(args):
-            params['nome'] = args[i+1]
-            i += 2
-        elif args[i] == '--email' and i+1 < len(args):
-            params['email'] = args[i+1]
-            i += 2
-        elif args[i] == '--telefone' and i+1 < len(args):
-            params['telefone'] = args[i+1]
-            i += 2
-        elif args[i] == '--role' and i+1 < len(args):
-            params['role'] = args[i+1]
-            i += 2
-        else:
-            i += 1
-
-    editar_usuario(usuario_id, **params)
+    main()

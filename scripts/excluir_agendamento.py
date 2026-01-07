@@ -1,33 +1,42 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Script para Excluir Agendamento
+"""
+
 import sys
 import requests
+from utils import Colors, print_header, print_success, print_error, print_info
 
 def excluir_agendamento(agendamento_id):
     API_URL = f"http://localhost:8080/api/agendamentos/{agendamento_id}"
     
-    response = requests.delete(API_URL)
-    
-    if response.status_code == 200:
-        print(f"✅ Agendamento ID {agendamento_id} cancelado com sucesso!")
-        try:
-            print("Resposta:", response.json())
-        except:
-            pass
-    elif response.status_code == 404:
-        print(f"❌ Agendamento não encontrado (ID: {agendamento_id})")
-    else:
-        try:
-            print("Status:", response.status_code)
-            print("Resposta:", response.json())
-        except Exception:
-            print("Resposta bruta:", response.text)
+    try:
+        print_info(f"Excluindo agendamento {agendamento_id}...")
+        response = requests.delete(API_URL, timeout=10)
+        
+        if response.status_code == 200:
+            print_success("Agendamento excluído/cancelado com sucesso!")
+        else:
+            print_error(f"Erro ao excluir! Status: {response.status_code}")
+    except Exception as e:
+        print_error(f"Erro: {str(e)}")
+
+def main():
+    try:
+        print_header("EXCLUIR AGENDAMENTO")
+        
+        if len(sys.argv) > 1:
+            excluir_agendamento(sys.argv[1])
+        else:
+            aid = input(f"{Colors.CYAN}ID do Agendamento para excluir: {Colors.END}").strip()
+            if input(f"{Colors.RED}Tem certeza? (s/n): {Colors.END}").lower() == 's':
+                excluir_agendamento(aid)
+            else:
+                print_info("Operação cancelada.")
+            
+    except KeyboardInterrupt:
+        print("\nCancelado.")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print(
-            "Uso:\n"
-            "python excluir_agendamento.py <agendamento_id>"
-        )
-        sys.exit(1)
-
-    agendamento_id = sys.argv[1]
-    excluir_agendamento(agendamento_id)
+    main()

@@ -155,6 +155,23 @@ services:
       - consulta-medica-network
     restart: unless-stopped
 
+  app-scripts:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile
+    container_name: app-scripts
+    volumes:
+      - ./scripts:/app
+    depends_on:
+      usuario-interface:
+        condition: service_started
+      agendamento:
+        condition: service_started
+    networks:
+      - consulta-medica-network
+    command: sh -c "python init_system.py && echo '✅ Inicialização concluída. Container pronto para uso interativo.' && tail -f /dev/null"
+    restart: unless-stopped
+
 volumes:
   rabbitmq_data:
   db_data:

@@ -26,7 +26,7 @@ def criar_usuario(nome, cpf, email, senha, role):
         print("Resposta bruta:", response.text)
 
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     if len(sys.argv) != 6:
         print(
             "Uso:\n"
